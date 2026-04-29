@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RiderLink ML Simulator</title>
+    <meta name="description" content="Visualizing AI-based anomaly detection for motorcycle crash events.">
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Roboto+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>RiderLink / <span class="neon-accent">Autoencoder Simulator</span></h1>
+            <p>Visualizing Phase 3: Anomaly Threshold Tuning for Edge Deployment</p>
+        </header>
+
+        <section class="controls glass-panel" aria-label="Simulation scenario controls">
+            <h3>Simulation Scenarios</h3>
+            <div class="btn-group" role="group" aria-label="Select a riding scenario">
+                <button id="btn-normal" class="btn active" aria-pressed="true" aria-label="Simulate normal cruising">Normal Cruising</button>
+                <button id="btn-pothole" class="btn" aria-pressed="false" aria-label="Simulate rough terrain">Rough Terrain</button>
+                <button id="btn-crash" class="btn btn-danger" aria-pressed="false" aria-label="Simulate a crash event">Simulate Crash</button>
+            </div>
+        </section>
+
+        <div class="main-dashboard">
+            <div class="glass-panel">
+                <h2>Raw Telemetry (IMU)</h2>
+                <div class="chart-container">
+                    <canvas id="imuChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="header-with-status">
+                    <h2>Reconstruction Error (MSE)</h2>
+                    <div id="status-indicator" class="status-safe">SAFE (NORMAL)</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="errorChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div id="sos-overlay" class="hidden">
+            <div class="sos-content">
+                <h1>SOS PROTOCOL TRIGGERED</h1>
+                <p>High-G Anomaly Detected above Threshold</p>
+                <button id="btn-dismiss">DISMISS & RESET</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
