@@ -24,6 +24,18 @@ const btnCrash = document.getElementById('btn-crash');
 const statusIndicator = document.getElementById('status-indicator');
 const sosOverlay = document.getElementById('sos-overlay');
 const btnDismiss = document.getElementById('btn-dismiss');
+const sosDispatchText = document.getElementById('sos-dispatch-text');
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+const chatMessagesElement = document.getElementById('chat-messages');
+
+// The simulator is served separately from FastAPI. Override this from the
+// browser console with `window.RIDERLINK_API_URL = "https://..."` if needed.
+const SOS_DISPATCH_URL = `${window.RIDERLINK_API_URL || 'http://127.0.0.1:8000'}/api/v1/sos-dispatch`;
+const DEMO_COORDINATES = [12.9716, 77.5946]; // Simulator-only example location (Bengaluru).
+let dispatchController = null;
+const chatHistory = [];
 
 // Setup UI Listeners
 const updateActiveBtn = (activeBtn) => {
@@ -40,6 +52,8 @@ btnPothole.addEventListener('click', () => { currentMode = 'pothole'; updateActi
 btnCrash.addEventListener('click', () => { currentMode = 'crash'; updateActiveBtn(btnCrash); });
 
 btnDismiss.addEventListener('click', () => {
+    if (dispatchController) dispatchController.abort();
+    dispatchController = null;
     sosOverlay.classList.add('hidden');
     isSosActive = false;
     aboveThresholdCount = 0;
@@ -47,6 +61,87 @@ btnDismiss.addEventListener('click', () => {
     updateActiveBtn(btnNormal);
     statusIndicator.className = 'status-safe';
     statusIndicator.innerText = 'SAFE (NORMAL)';
+    sosDispatchText.innerText = 'High-G Anomaly Detected above Threshold';
+});
+
+async function requestSosDispatch({ ax, ay, az }) {
+    if (dispatchController) dispatchController.abort();
+    dispatchController = new AbortController();
+    sosDispatchText.innerText = 'Crash detected. Generating emergency dispatch…';
+
+    const impactGForce = Math.sqrt(ax ** 2 + ay ** 2 + az ** 2);
+    const payload = {
+        rider_id: 'simulator-rider',
+        bike_model: 'Triumph Speed 400',
+        speed_kmh: 48,
+        impact_g_force: Number(impactGForce.toFixed(2)),
+        pre_crash_lean_angle: Number((Math.atan2(ay, az) * 180 / Math.PI).toFixed(1)),
+        coordinates: DEMO_COORDINATES,
+        tumbles_detected: false,
+        time_of_impact: new Date().toISOString()
+    };
+
+    try {
+        const response = await fetch(SOS_DISPATCH_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: dispatchController.signal
+        });
+        if (!response.ok) {
+            throw new Error(`Dispatcher returned HTTP ${response.status}`);
+        }
+        const result = await response.json();
+        sosDispatchText.innerText = result.dispatch_text || 'Dispatch service returned an empty response.';
+    } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error('SOS dispatch request failed:', error);
+        sosDispatchText.innerText = 'SOS alert is active, but the LLM dispatcher is unavailable. Check the API connection and model credentials.';
+    }
+}
+
+function appendChatMessage(role, content) {
+    const messageElement = document.createElement('div');
+    messageElement.className = `chat-message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
+    messageElement.innerText = content;
+    chatMessagesElement.appendChild(messageElement);
+    chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
+    return messageElement;
+}
+
+chatForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const content = chatInput.value.trim();
+    if (!content || chatSend.disabled) return;
+
+    chatHistory.push({ role: 'user', content });
+    while (chatHistory.length > 20) chatHistory.shift();
+    appendChatMessage('user', content);
+    chatInput.value = '';
+    chatSend.disabled = true;
+    const pendingMessage = appendChatMessage('assistant', 'Thinking…');
+
+    try {
+        const response = await fetch(`${window.RIDERLINK_API_URL || 'http://127.0.0.1:8000'}/api/v1/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: chatHistory })
+        });
+        if (!response.ok) throw new Error(`Chat service returned HTTP ${response.status}`);
+        const result = await response.json();
+        const reply = result.reply || 'The assistant returned an empty response.';
+        pendingMessage.innerText = reply;
+        chatHistory.push({ role: 'assistant', content: reply });
+        while (chatHistory.length > 20) chatHistory.shift();
+    } catch (error) {
+        console.error('Chat request failed:', error);
+        pendingMessage.innerText = 'The assistant is unavailable. Check the API connection and model credentials, then try again.';
+        // Keep failed turns out of the model context so a retry starts cleanly.
+        chatHistory.pop();
+    } finally {
+        chatSend.disabled = false;
+        chatInput.focus();
+    }
 });
 
 // Initialize Charts
@@ -171,6 +266,7 @@ setInterval(() => {
         
         isSosActive = true;
         aboveThresholdCount = 0;
+        void requestSosDispatch({ ax, ay, az });
         setTimeout(() => {
             sosOverlay.classList.remove('hidden');
         }, 300); // 300ms delay to see the graph spike

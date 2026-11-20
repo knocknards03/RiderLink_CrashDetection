@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RiderLink ML Simulator</title>
     <meta name="description" content="Visualizing AI-based anomaly detection for motorcycle crash events.">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=4">
     <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Roboto+Mono&display=swap" rel="stylesheet">
@@ -44,15 +44,43 @@
                 </div>
             </div>
         </div>
+
+        <section class="chatbot-panel glass-panel" aria-labelledby="chatbot-heading">
+            <div class="chatbot-heading">
+                <div class="assistant-brand">
+                    <div class="assistant-avatar" aria-hidden="true">S</div>
+                    <div>
+                        <h2 id="chatbot-heading">Sarathi</h2>
+                        <p>Your RiderLink safety companion</p>
+                    </div>
+                </div>
+                <span class="chatbot-indicator">SAFETY ASSISTANT</span>
+            </div>
+            <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+                <div class="chat-message assistant-message"><strong>Namaste, I’m Sarathi.</strong><br>Ask me about your ride, crash alerts, or motorcycle safety. If you need urgent help, use one of the call options below.</div>
+            </div>
+            <div class="emergency-actions" aria-label="Emergency call options">
+                <a class="emergency-action emergency-services" href="tel:112">
+                    <span class="action-icon" aria-hidden="true">112</span>
+                    <span><strong>Indian Medical Services</strong><small>Call 112 for emergency medical response</small></span>
+                    <span class="action-arrow" aria-hidden="true">↗</span>
+                </a>
+            </div>
+            <form id="chat-form" class="chat-form">
+                <input id="chat-input" name="message" type="text" maxlength="2000" autocomplete="off" aria-label="Message the safety assistant" placeholder="Ask a question…" required>
+                <button id="chat-send" class="btn chat-send-button" type="submit"><span>Send</span><span aria-hidden="true">➤</span></button>
+            </form>
+            <p class="chatbot-disclaimer">General safety information only. Sarathi can’t diagnose or place calls for you.</p>
+        </section>
         
         <div id="sos-overlay" class="hidden">
             <div class="sos-content">
                 <h1>SOS PROTOCOL TRIGGERED</h1>
-                <p>High-G Anomaly Detected above Threshold</p>
+                <p id="sos-dispatch-text" aria-live="polite">High-G Anomaly Detected above Threshold</p>
                 <button id="btn-dismiss">DISMISS & RESET</button>
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>
